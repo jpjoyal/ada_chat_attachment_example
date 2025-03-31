@@ -1,0 +1,493 @@
+<!-- The following line is essential for the "position: fixed" property to work correctly in IE -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"> 
+    <meta charset="utf-8">
+    <title>Conversation Demo</title>
+    <!-- Add Font Awesome for the paperclip icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script
+        id="__ada"
+        data-handle="genbotjp"
+        src="https://static.ada.support/embed2.js"
+    ></script>
+    <script>
+        window.adaSettings = {
+            parentElement: "custom-chat-container"
+        };
+    </script>
+    <style>
+        body {
+            background-image: url('./background.webp');
+            background-repeat: repeat;
+            background-color: #F6F7FC;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .chat-wrapper {
+            position: fixed;
+            bottom: 100px; /* Position above the launcher */
+            right: 20px;
+            width: 400px; /* Fixed width for floating chat */
+            height: 600px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999;
+        }
+
+        #custom-chat-container {
+            flex: 1; /* Take up remaining space */
+            min-height: 0; /* Allow flex to control height */
+            width: 100%;
+            position: relative; /* For proper iframe positioning */
+        }
+
+        #custom-chat-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .attachment-section {
+            height: 20px;
+            padding: 10px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center content horizontally */
+            gap: 8px;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .attachment-section:hover {
+            background-color: #f5f5f5;
+        }
+
+        .attachment-section i {
+            color: #666;
+        }
+
+        .attachment-text {
+            font-size: 14px;
+            color: #666;
+            font-family: inherit; /* Inherit system-ui font */
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Update Switch styles */
+        .switch-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px; /* Changed from right to left */
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000; /* Ensure it's above other content */
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .switch-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Hide attachment section when toggle is off */
+        .attachment-section.hidden {
+            display: none;
+        }
+
+        /* Custom Launcher styles */
+        .custom-launcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2196F3;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+
+        .custom-launcher::before,
+        .custom-launcher::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 3px;
+            background: white;
+            border-radius: 2px;
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+        }
+
+        .custom-launcher.active::before,
+        .custom-launcher.active::after {
+            opacity: 1;
+        }
+
+        .custom-launcher.active::before {
+            transform: rotate(45deg);
+        }
+
+        .custom-launcher.active::after {
+            transform: rotate(-45deg);
+        }
+
+        .custom-launcher img {
+            width: 35px;
+            height: 35px;
+            object-fit: contain;
+            transition: opacity 0.2s ease;
+        }
+
+        .custom-launcher.active img {
+            opacity: 0;
+        }
+
+        /* Show chat wrapper when active */
+        .chat-wrapper.active {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        /* Update launcher animation */
+        .custom-launcher.active {
+            transform: scale(0.8);
+            background: #ff4444; /* Change color when active */
+        }
+
+        .custom-launcher:hover {
+            transform: scale(1.05);
+        }
+
+        .custom-launcher.active:hover {
+            transform: scale(0.85);
+        }
+
+        /* Update mobile media query for switch position */
+        @media (max-width: 480px), (max-height: 480px) {
+            .chat-wrapper {
+                width: 100%;
+                /* Adjust height to leave space for launcher */
+                height: calc(100% - 100px);
+                max-height: calc(100vh - 100px); /* Ensure it doesn't overflow viewport */
+                bottom: 90px; /* Position above the launcher */
+                right: 0;
+                border-radius: 8px 8px 0 0; /* Round only top corners */
+            }
+
+            .chat-wrapper.active {
+                transform: translateY(0) scale(1);
+            }
+
+            /* Ensure launcher stays at bottom */
+            .custom-launcher {
+                bottom: 20px; /* Keep consistent spacing */
+            }
+
+            /* Update switch container position on mobile */
+            .switch-container {
+                bottom: 20px;
+                left: 20px;
+                padding: 10px; /* Slightly smaller padding on mobile */
+            }
+        }
+
+        /* Update landscape mode for switch */
+        @media (max-height: 480px) and (orientation: landscape) {
+            .chat-wrapper {
+                width: 85%; /* Make chat much wider */
+                height: 80vh; /* Make it shorter */
+                max-height: calc(100vh - 100px);
+                right: 20px;
+                bottom: 90px;
+                display: flex;
+                flex-direction: row; /* Change to horizontal layout */
+            }
+
+            #custom-chat-container {
+                flex: 1;
+                min-height: 100%; /* Take full height */
+                width: auto; /* Allow width to be controlled by flex */
+            }
+
+            /* Adjust attachment section for landscape */
+            .attachment-section {
+                height: auto;
+                width: 40px;
+                padding: 8px;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center; /* Ensure icon is centered in landscape */
+                border-top: none;
+                border-left: 1px solid #eee;
+            }
+
+            .attachment-section i {
+                font-size: 20px;
+            }
+
+            /* Hide the switch in landscape to save space */
+            .switch-container {
+                bottom: 20px;
+                left: 20px;
+                transform: scale(0.9); /* Slightly smaller in landscape */
+            }
+        }
+
+        /* Additional media query for very small height */
+        @media (max-height: 350px) and (orientation: landscape) {
+            .chat-wrapper {
+                height: 90vh; /* Take up more vertical space on very small screens */
+                bottom: 70px;
+            }
+
+            .custom-launcher {
+                transform: scale(0.8);
+                bottom: 10px;
+            }
+
+            .switch-container {
+                transform: scale(0.8);
+                bottom: 10px;
+                left: 10px;
+            }
+        }
+
+        /* Add file progress styles */
+        .file-progress {
+            display: none; /* Hidden by default */
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-top: 1px solid #eee;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-size: 13px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-progress.active {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-name {
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+
+        .progress-percentage {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #e0e0e0;
+            width: 0%;
+            transition: width 0.3s ease;
+            z-index: 0;
+        }
+
+        .file-progress > * {
+            z-index: 1;
+        }
+
+        /* Update landscape mode for progress bar */
+        @media (max-height: 480px) and (orientation: landscape) {
+            .file-progress {
+                width: 200px;
+                transform: rotate(-90deg);
+                transform-origin: bottom right;
+                position: absolute;
+                right: 40px;
+                bottom: 100px;
+                border-top: none;
+                border-left: 1px solid #eee;
+            }
+        }
+
+        /* Add sent state styles */
+        .progress-percentage.sent {
+            color: #4CAF50; /* Green color for success */
+        }
+    </style>
+</head>
+<body>
+    <!-- Add the custom launcher -->
+    <div class="custom-launcher" id="chat-launcher">
+        <img src="https://static.ada.support/images/c1513187-eb88-4fb1-8e51-ab66b53b45f2.png" alt="Chat">
+    </div>
+
+    <!-- Add the switch container -->
+    <div class="switch-container">
+        <span class="switch-label">Attachment Section</span>
+        <label class="switch">
+            <input type="checkbox" id="attachment-toggle" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="chat-wrapper">
+        <!-- This div will host the Ada chat widget -->
+        <div id="custom-chat-container"></div>
+        
+        <!-- Attachment section -->
+        <label for="file-input" class="attachment-section">
+            <i class="fas fa-paperclip"></i>
+            <span class="attachment-text">Attachment</span>
+            <input type="file" id="file-input">
+        </label>
+
+        <!-- Add progress bar section -->
+        <div class="file-progress">
+            <div class="progress-bar"></div>
+            <span class="file-name"></span>
+            <span class="progress-percentage">0%</span>
+        </div>
+    </div>
+
+    <script>
+        // Update file input handler
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const progressSection = document.querySelector('.file-progress');
+                const fileName = document.querySelector('.file-name');
+                const progressBar = document.querySelector('.progress-bar');
+                const progressPercentage = document.querySelector('.progress-percentage');
+                
+                // Show progress section and set file name
+                progressSection.classList.add('active');
+                fileName.textContent = file.name;
+                
+                // Reset progress percentage class if it was previously sent
+                progressPercentage.classList.remove('sent');
+                
+                // Simulate upload progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 20;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        
+                        // After reaching 100%, wait 500ms then show "Sent"
+                        setTimeout(() => {
+                            progressPercentage.textContent = 'Sent';
+                            progressPercentage.classList.add('sent');
+                        }, 500);
+                    } else {
+                        progressPercentage.textContent = `${Math.round(progress)}%`;
+                    }
+                    
+                    progressBar.style.width = `${progress}%`;
+                }, 500);
+            }
+        });
+
+        // Add toggle functionality
+        document.getElementById('attachment-toggle').addEventListener('change', function(e) {
+            const attachmentSection = document.querySelector('.attachment-section');
+            if (this.checked) {
+                attachmentSection.classList.remove('hidden');
+            } else {
+                attachmentSection.classList.add('hidden');
+            }
+        });
+
+        // Update launcher functionality with improved animation
+        document.getElementById('chat-launcher').addEventListener('click', function() {
+            const chatWrapper = document.querySelector('.chat-wrapper');
+            const launcher = this;
+            
+            chatWrapper.classList.toggle('active');
+            launcher.classList.toggle('active');
+            
+            // Optional: Prevent body scrolling when chat is open
+            document.body.style.overflow = chatWrapper.classList.contains('active') ? 'hidden' : '';
+        });
+    </script>
+</body>
+</html>
